@@ -1,30 +1,27 @@
 import telebot
 from telebot import types
+
 from config import TOKEN, ADMIN_ID
+from database import add_user, get_users_count
 from knowledge import KNOWLEDGE
+from ai import ai_answer
+
 
 bot = telebot.TeleBot(TOKEN)
 
-users = set()
 
-
-def create_menu():
+def menu():
     keyboard = types.ReplyKeyboardMarkup(
         resize_keyboard=True
     )
 
     keyboard.add(
-        "🎮 Ошибка сервера",
-        "📡 Подключение"
+        "🎮 Игра",
+        "📜 Лог"
     )
 
     keyboard.add(
-        "🐌 Лаги",
-        "⚙️ Моды"
-    )
-
-    keyboard.add(
-        "🧠 AI Помощь"
+        "🧠 AI помощь"
     )
 
     return keyboard
@@ -32,29 +29,43 @@ def create_menu():
 
 @bot.message_handler(commands=["start"])
 def start(message):
-    users.add(message.from_user.id)
+
+    add_user(
+        message.from_user.id,
+        message.from_user.username
+    )
 
     bot.send_message(
         message.chat.id,
-        "🚀 PulSar Host Support AI\n\n"
-        "Я помогу решить проблему с сервером.",
-        reply_markup=create_menu()
+        "🚀 PulSar Host Support AI Ultimate\n\n"
+        "Ваш виртуальный инженер поддержки.\n"
+        "Опишите проблему или выберите раздел.",
+        reply_markup=menu()
     )
 
 
 @bot.message_handler(commands=["admin"])
 def admin(message):
+
     if message.from_user.id == ADMIN_ID:
+
         bot.send_message(
             message.chat.id,
-            f"👑 Админ панель\n\n"
-            f"Пользователей: {len(users)}\n"
-            f"Статус: 🟢 Онлайн"
+            f"""
+👑 PulSar Host Admin Panel
+
+👥 Пользователей: {get_users_count()}
+
+🤖 Статус:
+🟢 Бот работает
+"""
         )
+
     else:
+
         bot.send_message(
             message.chat.id,
-            "❌ Нет доступа"
+            "❌ У вас нет доступа."
         )
 
 
@@ -63,26 +74,27 @@ def support(message):
 
     text = message.text.lower()
 
+
     for problem, answer in KNOWLEDGE.items():
 
         if problem in text:
+
             bot.send_message(
                 message.chat.id,
                 answer
             )
+
             return
 
 
+    answer = ai_answer(text)
+
     bot.send_message(
         message.chat.id,
-        "🤖 Я не нашёл решение.\n\n"
-        "Напиши:\n"
-        "🎮 Какая игра?\n"
-        "📜 Какая ошибка?\n"
-        "🖥 Отправь лог."
+        answer
     )
 
 
-print("PulSar Host Support AI запущен")
+print("🚀 PulSar Host Support AI Ultimate запущен")
 
 bot.infinity_polling()
