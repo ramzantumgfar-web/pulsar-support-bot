@@ -5,6 +5,7 @@ from config import TOKEN, ADMIN_ID
 from database import add_user, get_users_count
 from knowledge import KNOWLEDGE
 from ai import ai_answer
+from tickets import create_ticket
 
 
 bot = telebot.TeleBot(TOKEN)
@@ -21,7 +22,8 @@ def menu():
     )
 
     keyboard.add(
-        "🧠 AI помощь"
+        "🧠 AI помощь",
+        "🎫 Создать тикет"
     )
 
     return keyboard
@@ -38,8 +40,8 @@ def start(message):
     bot.send_message(
         message.chat.id,
         "🚀 PulSar Host Support AI Ultimate\n\n"
-        "Ваш виртуальный инженер поддержки.\n"
-        "Опишите проблему или выберите раздел.",
+        "Я помогу решить проблему с сервером.\n"
+        "Выберите раздел или опишите проблему.",
         reply_markup=menu()
     )
 
@@ -56,16 +58,16 @@ def admin(message):
 
 👥 Пользователей: {get_users_count()}
 
-🤖 Статус:
-🟢 Бот работает
+🎫 Система тикетов: 🟢 Включена
+
+🤖 Бот: Онлайн
 """
         )
 
     else:
-
         bot.send_message(
             message.chat.id,
-            "❌ У вас нет доступа."
+            "❌ Нет доступа"
         )
 
 
@@ -75,6 +77,45 @@ def support(message):
     text = message.text.lower()
 
 
+    # Создание тикета
+    if "тикет" in text or "🎫" in text:
+
+        ticket_id = create_ticket(
+            message.from_user.id,
+            message.from_user.username,
+            message.text
+        )
+
+        bot.send_message(
+            message.chat.id,
+            f"""
+🎫 Тикет создан!
+
+Номер заявки: #{ticket_id}
+
+Администратор PulSar Host скоро рассмотрит проблему.
+"""
+        )
+
+        bot.send_message(
+            ADMIN_ID,
+            f"""
+🔔 Новый тикет!
+
+Номер: #{ticket_id}
+
+Пользователь:
+@{message.from_user.username}
+
+Проблема:
+{message.text}
+"""
+        )
+
+        return
+
+
+    # Проверка базы знаний
     for problem, answer in KNOWLEDGE.items():
 
         if problem in text:
@@ -87,11 +128,10 @@ def support(message):
             return
 
 
-    answer = ai_answer(text)
-
+    # AI помощь
     bot.send_message(
         message.chat.id,
-        answer
+        ai_answer(text)
     )
 
 
