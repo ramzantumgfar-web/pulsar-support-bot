@@ -1,81 +1,88 @@
 import telebot
-
-TOKEN = "8896894096:AAGRKjS_b3jxwnlndIaS8OMuzSNSaEASRQU"
+from telebot import types
+from config import TOKEN, ADMIN_ID
+from knowledge import KNOWLEDGE
 
 bot = telebot.TeleBot(TOKEN)
 
-@bot.message_handler(commands=["start"])
-def start(message):
-    bot.send_message(
-        message.chat.id,
-        "🚀 PulSar Host Support\n\n"
-        "Привет! Я автоматический помощник хостинга.\n"
-        "Опиши проблему, и я попробую помочь."
+users = set()
+
+
+def create_menu():
+    keyboard = types.ReplyKeyboardMarkup(
+        resize_keyboard=True
     )
 
-@bot.message_handler(commands=["help"])
-def help_command(message):
+    keyboard.add(
+        "🎮 Ошибка сервера",
+        "📡 Подключение"
+    )
+
+    keyboard.add(
+        "🐌 Лаги",
+        "⚙️ Моды"
+    )
+
+    keyboard.add(
+        "🧠 AI Помощь"
+    )
+
+    return keyboard
+
+
+@bot.message_handler(commands=["start"])
+def start(message):
+    users.add(message.from_user.id)
+
     bot.send_message(
         message.chat.id,
-        "🛠 Я могу помочь с:\n\n"
-        "🎮 Сервер не запускается\n"
-        "📡 Проблемы с подключением\n"
-        "⚙️ Ошибки модов и плагинов\n"
-        "🐌 Лаги сервера\n"
-        "📋 Ошибки консоли"
+        "🚀 PulSar Host Support AI\n\n"
+        "Я помогу решить проблему с сервером.",
+        reply_markup=create_menu()
     )
+
+
+@bot.message_handler(commands=["admin"])
+def admin(message):
+    if message.from_user.id == ADMIN_ID:
+        bot.send_message(
+            message.chat.id,
+            f"👑 Админ панель\n\n"
+            f"Пользователей: {len(users)}\n"
+            f"Статус: 🟢 Онлайн"
+        )
+    else:
+        bot.send_message(
+            message.chat.id,
+            "❌ Нет доступа"
+        )
+
 
 @bot.message_handler(func=lambda message: True)
 def support(message):
+
     text = message.text.lower()
 
-    if "не запускается" in text or "не стартует" in text:
-        answer = (
-            "🔴 Сервер не запускается.\n\n"
-            "Попробуй:\n"
-            "1. Проверить последнюю ошибку в консоли.\n"
-            "2. Проверить файлы сервера.\n"
-            "3. Перезапустить сервер."
-        )
+    for problem, answer in KNOWLEDGE.items():
 
-    elif "лаг" in text or "лаги" in text:
-        answer = (
-            "🐌 Проблемы с лагами.\n\n"
-            "Проверь:\n"
-            "1. Использование RAM.\n"
-            "2. Количество игроков.\n"
-            "3. Лишние плагины или моды."
-        )
+        if problem in text:
+            bot.send_message(
+                message.chat.id,
+                answer
+            )
+            return
 
-    elif "ошибка" in text or "error" in text:
-        answer = (
-            "⚠️ Найдена ошибка.\n\n"
-            "Отправь:\n"
-            "• полный текст ошибки\n"
-            "• лог консоли\n"
-            "• версию игры"
-        )
 
-    elif "подключ" in text or "зайти" in text:
-        answer = (
-            "📡 Проблема с подключением.\n\n"
-            "Проверь:\n"
-            "1. IP сервера.\n"
-            "2. Версию клиента.\n"
-            "3. Интернет-соединение."
-        )
+    bot.send_message(
+        message.chat.id,
+        "🤖 Я не нашёл решение.\n\n"
+        "Напиши:\n"
+        "🎮 Какая игра?\n"
+        "📜 Какая ошибка?\n"
+        "🖥 Отправь лог."
+    )
 
-    else:
-        answer = (
-            "🤖 Я пока не нашёл решение.\n\n"
-            "Опиши проблему подробнее:\n"
-            "• какая игра?\n"
-            "• какая ошибка?\n"
-            "• что произошло?"
-        )
 
-    bot.send_message(message.chat.id, answer)
-
-print("PulSar Host Support запущен")
+print("PulSar Host Support AI запущен")
 
 bot.infinity_polling()
